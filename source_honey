@@ -1,0 +1,144 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.IO;
+using System.Diagnostics;
+
+/////##PHOENIX
+namespace Honey
+{
+class HoneyPot
+{
+          
+        private static string _ip = "192.168.0.21";
+
+        //terminal service
+        private static int _porta1 = 3389;
+
+        //sql server
+        private static int _porta2 = 1433;
+
+        //mysql
+        private static int _porta3 = 3306;
+
+        static TcpListener _server1;
+        static TcpListener _server2;
+        static TcpListener _server3; 
+
+        public static void Main()
+        {
+            _server1 = new TcpListener(IPAddress.Parse(_ip), _porta1);
+            _server2 = new TcpListener(IPAddress.Parse(_ip), _porta2);
+            _server3 = new TcpListener(IPAddress.Parse(_ip), _porta3);
+
+            Thread _server1_inicio = new Thread(() => IniciarServer(_server1));
+            _server1_inicio.Start();
+
+            Thread _server2_inicio = new Thread(() => IniciarServer(_server2));
+            _server2_inicio.Start();
+
+            Thread _server3_inicio = new Thread(() => IniciarServer(_server3));
+            _server3_inicio.Start();
+           
+           Console.Clear();
+           Console.ForegroundColor = ConsoleColor.Green;
+           Console.WriteLine("Phoenix HoneyPot");
+           Console.WriteLine(string.Format("Aguardando nas portas {0} {1} {2}",_porta1,_porta2,_porta3));
+       
+        }
+
+        private static void IniciarServer(TcpListener _server)
+        {
+            try
+            {
+                _server.Start();
+                while (true)
+                {
+                    string _ip_invasor = null;
+                    string _porta_local = null;
+
+                    TcpClient _cliente = new TcpClient();
+
+                    _cliente = _server.AcceptTcpClient();
+
+                    _ip_invasor = ((IPEndPoint)_cliente.Client.RemoteEndPoint).Address.ToString();
+                    _porta_local = ((IPEndPoint)_cliente.Client.LocalEndPoint).Port.ToString();
+
+                    Console.WriteLine(string.Format("INVASOR! IP  {0} - PORTA LOCAL {1}", _ip_invasor, _porta_local));
+
+                    _cliente.Client.Close();
+                    
+
+                    CriarAviso(_ip_invasor,_porta_local);
+                }
+
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            
+        }
+
+        private static void CriarAviso(string ip,string porta)
+        {
+            string _caminhoWindow = @"/home/phoenix/Documents/window.html";
+            string _caminhoHack =  @"/home/phoenix/Documents/hack.html";
+
+            string _htmlWindow = "<!DOCTYPE html>";
+            _htmlWindow += "<title>";
+            _htmlWindow += "INVASOR!";
+            _htmlWindow += "</title>";
+            _htmlWindow += "<frameset rows='30%, 70%'>";
+            _htmlWindow += "<frame src='hack.html'>";
+            _htmlWindow += string.Format("<frame src=http://www.localizaip.com.br//localizar-ip.php?ip={0}>",ip);
+            _htmlWindow += "</frameset>";
+            _htmlWindow += "</html>";
+            
+            string _htmlHack = "<html>";
+            _htmlHack += "<head>";
+            _htmlHack += "<title>";
+            _htmlHack += "Hack";
+            _htmlHack += "</title>";
+            _htmlHack += "</head>";
+            _htmlHack += "<body>";
+            _htmlHack += "<body style=background-color:black>";
+            _htmlHack += string.Format("<center><font color = red><font size = 10>HACKER:{0} PORTA:{1} </center></font>", ip, porta);
+            
+            if (File.Exists(_caminhoWindow))
+            {
+                File.Delete(_caminhoWindow);
+            }
+
+            using(StreamWriter f = new StreamWriter(_caminhoWindow,true))
+            {
+               f.WriteLine(_htmlWindow);
+            }   
+       
+            
+            ////////////////////////////////////////////////////////////////////
+            
+            if (File.Exists(_caminhoHack))
+            {
+                File.Delete(_caminhoHack);
+            }
+            
+            
+            using(StreamWriter f = new StreamWriter(_caminhoHack,true))
+            {
+               f.WriteLine(_htmlHack);
+            }   
+
+            
+
+            Process.Start(_caminhoWindow);
+            
+        }
+}
+
+
+
+}
